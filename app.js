@@ -35,10 +35,19 @@ app.post("/", async function(req, res){
     console.log("passwordMatch: " + passwordMatch);
     
     if(username == "admin" && password == "secret") {
+        req.session.authenticated = true;
         res.render("welcome.ejs");
     } else {
         res.render("index.ejs", {"loginError":true});
         //passing loginError from route to view index.ejs
+    }
+});
+
+app.get("/myAccount", function(req, res){
+    if(req.session.authenticated) {
+        res.render("account.ejs"); 
+    } else {
+        res.redirect("/");
     }
 });
 
