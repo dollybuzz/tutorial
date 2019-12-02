@@ -4,8 +4,9 @@ const session = require("express-session");
 const bcrypt = require("bcrypt");
 const mysql = require("mysql");
 
-app.set("view egine", "ejs");
+app.set("view engine", "ejs");
 
+//setting parameters to use sessions
 app.use(session({
 secret: "top secret!",
 resave: true,
@@ -22,19 +23,26 @@ app.get("/", function(req, res){
    res.render("index.ejs");
 });
 
-//root post route
+//POST root route
 app.post("/", async function(req, res){
     let username = req.body.username;
     let password = req.body.password;
     //console.log("Username:" + username);
     //console.log("password:" + password);
     //res.send("This is the root route using POST!");
-    let hashedPwd = "$2a$10$06ofFgXJ9wysAOzQh0D0..RcDp1w/urY3qhO6VuUJL2c6tzAJPfj6";
+    
+    let result = await checkUsername(username);
+    let hashedPwd = "";
+    console.dir(result); //displays the values of the object
+    
+    if (result.length > 0) {
+        hashedPwd = result[0].password;
+    }
     
     let passwordMatch = await checkPassword(password, hashedPwd);
     console.log("passwordMatch: " + passwordMatch);
     
-    if(username == "admin" && password == "secret") {
+    if(result  && passwordMatch) {  //(user/password) values stored in db are "admin/secret" and "test/testing"
         req.session.authenticated = true;
         res.render("welcome.ejs");
     } else {
@@ -63,6 +71,17 @@ app.get("/logout", function(req, res) {
     res.redirect("/");
 });
 
+//MySQL database connection 
+function createDBConnection() {
+    var conn = mysql.createConnection({
+        host: "cst336db.space", //not localhost since this is Professor's server
+        user: "cst336_dbUser007",
+        password: "qbqxba",
+        database: "cst336_db007"
+    });
+    return conn;
+}
+
 //middleware function for session authentication to apply to all password-protected pages
 function isAuthenticated(req, res, next) {
     if(!req.session.authenticated) {
@@ -70,6 +89,27 @@ function isAuthenticated(req, res, next) {
     } else {
         next();
     }
+}
+
+/*
+Checks whether the username exists in the database.
+If found, returns corresponding record.
+@param {string} username
+@return {array of objects}
+*/
+function checkUsername(username) {
+    let sql = "SELECT * FROM users WHERE username = ?";
+    return new Promise( function(resolve, reject){
+        let conn = createDBConnection();
+        conn.connect(function(err){
+            if (err) throw err;
+            conn.query(sql, [username], function(err, rows, fields) {
+                if (err) throw err;
+                console.log("Rows found: " + rows.length);
+                resolve(rows);
+            });//query
+        });//connect
+    });//promise
 }
 
 /*
