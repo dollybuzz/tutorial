@@ -43,13 +43,34 @@ app.post("/", async function(req, res){
     }
 });
 
-app.get("/myAccount", function(req, res){
+//previous session authentication method before adding middleware function
+/*app.get("/myAccount", function(req, res){
     if(req.session.authenticated) {
         res.render("account.ejs"); 
     } else {
         res.redirect("/");
     }
+});*/
+
+//password-protected myAccount route
+app.get("/myAccount", isAuthenticated, function(req, res) {
+    res.render("account.ejs");
+})
+
+//logout route
+app.get("/logout", function(req, res) {
+    req.session.destroy();
+    res.redirect("/");
 });
+
+//middleware function for session authentication to apply to all password-protected pages
+function isAuthenticated(req, res, next) {
+    if(!req.session.authenticated) {
+        res.redirect("/");
+    } else {
+        next();
+    }
+}
 
 /*
 Checks the bcrypt value of the password submitted
