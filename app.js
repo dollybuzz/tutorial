@@ -25,8 +25,16 @@ app.get("/", function(req, res){
 //root post route
 app.post("/", function(req, res){
     let username = req.body.username;
-    let password = req.body.passwordl
-    res.send("This is the root route using POST!");
+    let password = req.body.password;
+    console.log("Username:" + username);
+    console.log("password:" + password);
+    //res.send("This is the root route using POST!");
+    if(username == "admin" && password == "secret") {
+        res.render("welcome.ejs");
+    } else {
+        res.render("index.ejs", {"loginError":true});
+        //passing loginError from route to view index.ejs
+    }
 });
 
 //listener
