@@ -1,8 +1,7 @@
 const express = require("express");
 const app = express();
 const session = require("express-session");
-const bcrypt = require("bcrypt");
-const mysql = require("mysql");
+const tools = require("./tools.js");
 
 app.set("view engine", "ejs");
 
@@ -31,7 +30,7 @@ app.post("/", async function(req, res){
     //console.log("password:" + password);
     //res.send("This is the root route using POST!");
     
-    let result = await checkUsername(username);
+    let result = await tools.checkUsername(username);
     let hashedPwd = "";
     console.dir(result); //displays the values of the object
     
@@ -39,7 +38,7 @@ app.post("/", async function(req, res){
         hashedPwd = result[0].password;
     }
     
-    let passwordMatch = await checkPassword(password, hashedPwd);
+    let passwordMatch = await tools.checkPassword(password, hashedPwd);
     console.log("passwordMatch: " + passwordMatch);
     
     if(result  && passwordMatch) {  //(user/password) values stored in db are "admin/secret" and "test/testing"
@@ -61,7 +60,7 @@ app.post("/", async function(req, res){
 });*/
 
 //password-protected myAccount route
-app.get("/myAccount", isAuthenticated, function(req, res) {
+app.get("/myAccount", tools.isAuthenticated, function(req, res) {
     res.render("account.ejs");
 })
 
@@ -70,61 +69,6 @@ app.get("/logout", function(req, res) {
     req.session.destroy();
     res.redirect("/");
 });
-
-//MySQL database connection 
-function createDBConnection() {
-    var conn = mysql.createConnection({
-        host: "cst336db.space", //not localhost since this is Professor's server
-        user: "cst336_dbUser007",
-        password: "qbqxba",
-        database: "cst336_db007"
-    });
-    return conn;
-}
-
-//middleware function for session authentication to apply to all password-protected pages
-function isAuthenticated(req, res, next) {
-    if(!req.session.authenticated) {
-        res.redirect("/");
-    } else {
-        next();
-    }
-}
-
-/*
-Checks whether the username exists in the database.
-If found, returns corresponding record.
-@param {string} username
-@return {array of objects}
-*/
-function checkUsername(username) {
-    let sql = "SELECT * FROM users WHERE username = ?";
-    return new Promise( function(resolve, reject){
-        let conn = createDBConnection();
-        conn.connect(function(err){
-            if (err) throw err;
-            conn.query(sql, [username], function(err, rows, fields) {
-                if (err) throw err;
-                console.log("Rows found: " + rows.length);
-                resolve(rows);
-            });//query
-        });//connect
-    });//promise
-}
-
-/*
-Checks the bcrypt value of the password submitted
-@param {string} password
-@return {boolean} true if password sub mitted is equal to bcrypt-hashed value, false otherwise.
-*/
-function checkPassword(password, hashedValue) {
-    return new Promise( function(resolve, reject) {
-        bcrypt.compare(password, hashedValue, function(err, result) {
-            console.log("Result: " + result);
-            resolve(result);
-        });
-    });
-}
 
 //listener
 app.listen("8080", "127.0.0.1", function(){
